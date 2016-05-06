@@ -8,7 +8,7 @@ include(ExternalProject)
 include(CheckIncludeFileCXX)
 
 # find_package()
-# include_directories()
+include_directories(vendors/cpp-optparse)
 # link_directories(${CMAKE_SOURCE_DIR}/)
 
 #set(LIBS
@@ -17,6 +17,7 @@ include(CheckIncludeFileCXX)
 #)
 
 file(GLOB headers
+    vendors/cpp-optparse/*.h
 )
 set(HEADERS ${headers})
 
