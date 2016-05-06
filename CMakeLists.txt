@@ -26,6 +26,7 @@ include_directories(
 
 file(GLOB sources
 	srcs/*.cpp
+	srcs/classes/*.cpp
 )
 set(SOURCES ${sources})
 

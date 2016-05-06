@@ -3,6 +3,7 @@
 
 #include <experimental/string_view>
 #include <iostream>
+#include <vector>
 
 namespace Bruteforce
 {
@@ -21,21 +22,22 @@ namespace Bruteforce
         } Config;
 
     public:
+        DES();
+        DES(DES const& other) = delete;
+        ~DES();
+
+    public:
+        DES&    operator=(DES const& other) = delete;
+
+    public:
+        bool    run(Config const& config, std::string& key);
+
+    protected:
+        Config  _config;
     };
 }
 
 std::ostream&
-operator<<(std::ostream& lhs, Bruteforce::DES::Config const& rhs)
-{
-    lhs << "Debug:\t\t\t" << (rhs.debug ? "Yes" : "No") << std::endl
-    << "Number of threads:\t" << rhs.nb_threads << std::endl
-    << "Salt:\t\t\t" << rhs.salt << std::endl
-    << "Encrypted key:\t\t" << rhs.encrypted_key << std::endl
-    << "Dictionaries:" << std::endl;
-    for (auto& path: rhs.dictionaries) {
-        lhs << "\t" << path << std::endl;
-    }
-    return lhs;
-}
+operator<<(std::ostream& lhs, Bruteforce::DES::Config const& rhs);
 
 #endif /* end of include guard: BRUTEFORCE_DES_HPP_ */
