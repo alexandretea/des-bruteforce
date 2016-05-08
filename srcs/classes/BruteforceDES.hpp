@@ -4,6 +4,7 @@
 #include <experimental/string_view>
 #include <iostream>
 #include <vector>
+#include <string>
 
 namespace Bruteforce
 {
@@ -31,6 +32,11 @@ namespace Bruteforce
 
     public:
         bool    run(Config const& config, std::string& key);
+
+    public:
+        static bool is_valid_config(Config const& config,
+                                    std::string* err) noexcept;
+        static void is_valid_config(Config const& config);
 
     protected:
         Config  _config;

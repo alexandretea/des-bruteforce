@@ -23,7 +23,7 @@ parse_options(int ac, char** av, Bruteforce::DES::Config& config)
         options.parse(ac, av);
         if (options.count("help"))
         {
-            std::cout << options.help() << std::endl;
+            std::cout << options.help();
             exit(EXIT_SUCCESS);
         }
         config.debug = options.count("debug");
@@ -51,14 +51,14 @@ main(int ac, char** av)
 
         if (not parse_options(ac, av, config)) {
             return EXIT_FAILURE;
-        }
-        if (bruteforcer.run(config, key)) {
+        } else if (bruteforcer.run(config, key)) {
             std::cout << "Key found: " << key << std::endl;
         } else {
             std::cout << "Key not found" << std::endl;
         }
+    //} catch (std::exception const& e) { // ConfigException
     } catch (std::exception const& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "An error occured: " << e.what() << std::endl;
         return EXIT_FAILURE;
     } catch (...) {
         std::cerr << "An unexpected internal error occured" << std::endl;
