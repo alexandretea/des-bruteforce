@@ -35,7 +35,8 @@ parse_options(int ac, char** av, Bruteforce::DES::Config& config)
                 options["dictionaries"].as<std::vector<std::string>>();
         }
     } catch (cxxopts::OptionException const& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << e.what() << std::endl
+                  << "Use --help to get usage information" << std::endl;
         return false;
     }
     return true;
@@ -56,7 +57,6 @@ main(int ac, char** av)
         } else {
             std::cout << "Key not found" << std::endl;
         }
-    //} catch (std::exception const& e) { // ConfigException
     } catch (std::exception const& e) {
         std::cerr << "An error occured: " << e.what() << std::endl;
         return EXIT_FAILURE;
