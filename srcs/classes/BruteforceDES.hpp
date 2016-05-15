@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include "concurrency/Threadpool.hpp"
 
 namespace Bruteforce
 {
@@ -41,9 +42,10 @@ namespace Bruteforce
     protected:
         Config  _config;
     };
+
+    std::ostream&
+    operator<<(std::ostream& lhs, Bruteforce::DES::Config const& rhs);
 }
 
-std::ostream&
-operator<<(std::ostream& lhs, Bruteforce::DES::Config const& rhs);
 
 #endif /* end of include guard: BRUTEFORCE_DES_HPP_ */

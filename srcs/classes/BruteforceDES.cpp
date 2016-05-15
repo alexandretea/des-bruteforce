@@ -63,18 +63,18 @@ namespace Bruteforce
             throw std::runtime_error(err); // switch to ConfigException
         }
     }
-}
 
-std::ostream&
-operator<<(std::ostream& lhs, Bruteforce::DES::Config const& rhs)
-{
-    lhs << "Debug:\t\t\t" << (rhs.debug ? "Yes" : "No") << std::endl
-        << "Number of threads:\t" << rhs.nb_threads << std::endl
-        << "Salt:\t\t\t" << rhs.salt << std::endl
-        << "Encrypted key:\t\t" << rhs.encrypted_key << std::endl
-        << "Dictionaries:" << std::endl;
-    for (auto& path: rhs.dictionaries) {
-        lhs << "\t" << path << std::endl;
+    std::ostream&
+    operator<<(std::ostream& lhs, Bruteforce::DES::Config const& rhs)
+    {
+        lhs << "Debug:\t\t\t" << (rhs.debug ? "Yes" : "No") << std::endl
+            << "Number of threads:\t" << rhs.nb_threads << std::endl
+            << "Salt:\t\t\t" << rhs.salt << std::endl
+            << "Encrypted key:\t\t" << rhs.encrypted_key << std::endl
+            << "Dictionaries:" << std::endl;
+        for (auto& path: rhs.dictionaries) {
+            lhs << "\t" << path << std::endl;
+        }
+        return lhs;
     }
-    return lhs;
 }

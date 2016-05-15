@@ -11,6 +11,7 @@ include(CheckIncludeFileCXX)
 include_directories(
     vendors/cxxopts/src
     srcs/classes
+    srcs/utils
 )
 # link_directories(${CMAKE_SOURCE_DIR}/)
 
