@@ -12,8 +12,9 @@ parse_options(int ac, char** av, Bruteforce::DES::Config& config)
         options.add_options()
             ("h,help", "display help")
             ("d,debug", "run with debug mode")
+            ("s,stats", "displays progression and a statistical summary")
             ("t,threads", "number of threads", cxxopts::value<unsigned int>())
-            ("s,salt", "salt", cxxopts::value<std::string>())
+            ("salt", "salt", cxxopts::value<std::string>())
             ("e,encrypted-key", "encrypted key", cxxopts::value<std::string>())
             ("dictionaries",
              "dictionary files, can be entered without this option",
@@ -27,6 +28,7 @@ parse_options(int ac, char** av, Bruteforce::DES::Config& config)
             exit(EXIT_SUCCESS);
         }
         config.debug = options.count("debug");
+        config.stats = options.count("stats");
         config.nb_threads = options["threads"].as<unsigned int>();
         config.salt = options["salt"].as<std::string>();
         config.encrypted_key = options["encrypted-key"].as<std::string>();

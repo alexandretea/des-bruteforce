@@ -1,10 +1,12 @@
 #ifndef BRUTEFORCE_DES_HPP_
 # define BRUTEFORCE_DES_HPP_
 
+#include <fstream>
 #include <experimental/string_view>
 #include <iostream>
 #include <vector>
 #include <string>
+#include <memory>
 #include "concurrency/Threadpool.hpp"
 
 namespace Bruteforce
@@ -12,11 +14,12 @@ namespace Bruteforce
     class DES
     {
     public:
-        using string_view = std::experimental::string_view;
+        using Threadpool = tea::concurrency::Threadpool;
 
     public:
         typedef struct {
             bool                        debug;
+            bool                        stats;
             unsigned int                nb_threads;
             std::string                 salt;
             std::string                 encrypted_key;
@@ -32,15 +35,19 @@ namespace Bruteforce
         DES&    operator=(DES const& other) = delete;
 
     public:
-        bool    run(Config const& config, std::string& key);
-
-    public:
+        bool        run(Config const& config, std::string& key);
         static bool is_valid_config(Config const& config,
                                     std::string* err) noexcept;
         static void is_valid_config(Config const& config);
 
     protected:
-        Config  _config;
+        void    extract_words(std::ifstream& dict);
+
+    protected:
+        std::unique_ptr<Threadpool> _threadpool;
+        std::string*                _key;
+
+        static const size_t         buffer_size = 4096;
     };
 
     std::ostream&
