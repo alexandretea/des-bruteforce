@@ -32,7 +32,7 @@ namespace Bruteforce
         ~DES();
 
     public:
-        DES&    operator=(DES const& other) = delete;
+        DES&        operator=(DES const& other) = delete;
 
     public:
         bool        run(Config const& config, std::string& key);
@@ -41,7 +41,8 @@ namespace Bruteforce
         static void is_valid_config(Config const& config);
 
     protected:
-        void    extract_words(std::ifstream& dict);
+        void        extract_words(std::ifstream& dict);
+        bool        bruteforce_bulk(std::vector<std::string> const& bulk);
 
     protected:
         std::unique_ptr<Threadpool> _threadpool;

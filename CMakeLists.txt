@@ -15,10 +15,10 @@ include_directories(
 )
 # link_directories(${CMAKE_SOURCE_DIR}/)
 
-#set(LIBS
-	#${Boost_LIBRARIES}
-	#-lpthread
-#)
+set(LIBS
+    #${Boost_LIBRARIES}
+    -lpthread
+)
 
 # file(GLOB headers
     # vendors/cpp-optparse/*.h
@@ -34,13 +34,13 @@ set(SOURCES ${sources})
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
                       COMPILE_FLAGS "${CMAKE_CXX_FLAGS} \
--g0 -O3 -D PRODUCTION -O3 -std=c++14 -W -Wall -Wextra -Werror")
+-g0 -O3 -D PRODUCTION -O3 -std=c++14 -W -Wall -Wextra")
 target_link_libraries(${PROJECT_NAME} ${LIBS})
 
 add_executable(${PROJECT_NAME}_debug ${SOURCES})
 set_target_properties(${PROJECT_NAME}_debug PROPERTIES COMPILE_FLAGS
 "${CMAKE_CXX_FLAGS} -O0 -g3 -D DEBUG -std=c++14 -W -Wall -Wextra")
-target_link_libraries(${PROJECT_NAME} ${LIBS})
+target_link_libraries(${PROJECT_NAME}_debug ${LIBS})
 
 # add_executable(${PROJECT_NAME}_asan ${SOURCES})
 # set_target_properties(${PROJECT_NAME}_asan PROPERTIES COMPILE_FLAGS

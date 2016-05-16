@@ -36,11 +36,12 @@ namespace Bruteforce
                           << dict_path << std::endl;
             }
         }
-        return true;
+        while (_threadpool->unsafe_pending_tasks() > 0);
+        return false;
     }
 
     /*
-    ** Private member functions
+    ** Protected member functions
     */
     void
     DES::extract_words(std::ifstream& dict) {
@@ -77,12 +78,19 @@ namespace Bruteforce
                 }
             }
             if (not bulk.empty()) {
-                for (auto& a: bulk) {
-                    std::cout << a << std::endl;
-                }
-                // _threadpool( , std::move(bulk));
+                _threadpool->push(std::bind(&DES::bruteforce_bulk, this,
+                                  std::placeholders::_1), std::move(bulk));
             }
         }
+    }
+
+    bool
+    DES::bruteforce_bulk(std::vector<std::string> const& bulk)
+    {
+        for (auto& a: bulk) {
+            std::cout << a << std::endl;
+        }
+        return false;
     }
 
     /*
