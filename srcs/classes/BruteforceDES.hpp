@@ -15,6 +15,7 @@ namespace Bruteforce
     {
     public:
         using Threadpool = tea::concurrency::Threadpool;
+        using BoolFuture = std::future<bool>;
 
     public:
         typedef struct {
@@ -41,14 +42,19 @@ namespace Bruteforce
         static void is_valid_config(Config const& config);
 
     protected:
+        void        attempts_producer();
         void        extract_words(std::ifstream& dict);
         bool        bruteforce_bulk(std::vector<std::string> const& bulk);
 
     protected:
-        std::unique_ptr<Threadpool> _threadpool;
+        Config const*               _config;
         std::string*                _key;
+        std::unique_ptr<Threadpool> _threadpool;
+        std::vector<BoolFuture>     _futures;
+        std::mutex                  _mutex;
 
-        static const size_t         buffer_size = 4096;
+        static const size_t         buffer_size;
+        static const unsigned int   timeout;
     };
 
     std::ostream&

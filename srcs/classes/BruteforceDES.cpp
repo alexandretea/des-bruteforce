@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdexcept>
 #include <fstream>
 #include "BruteforceDES.hpp"
@@ -5,9 +6,15 @@
 namespace Bruteforce
 {
     /*
+    ** Static variables
+    */
+    const size_t         DES::buffer_size = 4096; // bytes
+    const unsigned int   DES::timeout     = 1000; // milliseconds
+
+    /*
     ** Constructor/Destructor
     */
-    DES::DES() : _threadpool(nullptr), _key(nullptr)
+    DES::DES() : _config(nullptr), _key(nullptr), _threadpool(nullptr)
     {
     }
 
@@ -25,28 +32,67 @@ namespace Bruteforce
         std::cout << "DES bruteforce running with following configuration:"
                   << std::endl << config;
         _key = &key;
+        _config = &config;
         _threadpool = std::make_unique<Threadpool>(config.nb_threads);
-        for (auto& dict_path: config.dictionaries) {
-            std::ifstream   dict(dict_path.c_str());
 
-            if (dict) {
-                extract_words(dict);
-            } else {
-                std::cerr << "Warning: can't read from dictionary: "
-                          << dict_path << std::endl;
+        std::thread dict_reader(std::bind(&DES::attempts_producer, this));
+        bool        found(false);
+
+        do {
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(DES::timeout)
+            );
+
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+
+                for (auto it = _futures.begin(); it != _futures.end();) {
+                    if (it->valid()) {
+                        if (it->get()) {
+                            found = true;
+                            break ;
+                        } else {
+                            it = _futures.erase(it);
+                            continue ;
+                        }
+                    }
+                    ++it;
+                }
             }
-        }
-        while (_threadpool->unsafe_pending_tasks() > 0);
-        return false;
+        } while (not found
+                 and not _futures.empty()
+                 and _threadpool->unsafe_pending_tasks() > 0);
+        dict_reader.join();
+        return found;
     }
 
     /*
     ** Protected member functions
     */
     void
+    DES::attempts_producer()
+    {
+        try {
+            for (auto& dict_path: _config->dictionaries) {
+                std::ifstream   dict(dict_path.c_str());
+
+                if (dict) {
+                    extract_words(dict);
+                } else {
+                    std::cerr << "Warning: can't read from dictionary: "
+                    << dict_path << std::endl;
+                }
+            }
+        } catch (std::exception const& e) {
+            std::cerr << "An error occured while extracting from dictionaries: "
+                      << e.what() << std::endl;
+        }
+    }
+
+    void
     DES::extract_words(std::ifstream& dict) {
         using   string_view = std::experimental::string_view;
-        char    buffer[DES::buffer_size];
+        char    buffer[DES::buffer_size + 1];
 
         while (not dict.eof()) {
             unsigned int                i = 0;
@@ -56,6 +102,8 @@ namespace Bruteforce
             dict.read(buffer, DES::buffer_size);
             buffer[dict.gcount()] = '\0';
 
+            if (dict.gcount() == 0)
+                continue ;
             string_view buff_view(buffer, dict.gcount());
 
             while (i < buff_view.size()) {
@@ -78,8 +126,13 @@ namespace Bruteforce
                 }
             }
             if (not bulk.empty()) {
-                _threadpool->push(std::bind(&DES::bruteforce_bulk, this,
-                                  std::placeholders::_1), std::move(bulk));
+                std::lock_guard<std::mutex> lock(_mutex);
+
+                _futures.emplace_back(
+                    _threadpool->push(std::bind(&DES::bruteforce_bulk, this,
+                                            std::placeholders::_1),
+                                      std::move(bulk))
+                );
             }
         }
     }
@@ -87,8 +140,23 @@ namespace Bruteforce
     bool
     DES::bruteforce_bulk(std::vector<std::string> const& bulk)
     {
-        for (auto& a: bulk) {
-            std::cout << a << std::endl;
+        try {
+            char const* encrypted;
+
+            for (auto& attempt: bulk) {
+                if ((encrypted =
+                    ::crypt(attempt.data(), _config->salt.data())) == NULL) {
+                    std::cerr << "Warning: crypt() failed (salt: '"
+                              << _config->salt << "', key: '" << attempt << "')"
+                              << std::endl;
+                } else if (_config->encrypted_key == encrypted + 2) {
+                    *_key = attempt;
+                    return true;
+                }
+            }
+        } catch (std::exception const& e) {
+            std::cerr << "An error occured while bruteforcing: "
+                      << e.what() << std::endl;
         }
         return false;
     }

@@ -18,6 +18,7 @@ include_directories(
 set(LIBS
     #${Boost_LIBRARIES}
     -lpthread
+    -lcrypt
 )
 
 # file(GLOB headers
