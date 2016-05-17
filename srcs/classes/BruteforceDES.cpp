@@ -14,7 +14,8 @@ namespace Bruteforce
     /*
     ** Constructor/Destructor
     */
-    DES::DES() : _config(nullptr), _key(nullptr), _threadpool(nullptr)
+    DES::DES() :
+        _config(nullptr), _key(nullptr), _threadpool(nullptr)
     {
     }
 
@@ -33,12 +34,18 @@ namespace Bruteforce
                   << std::endl << config;
         _key = &key;
         _config = &config;
+        if (_config->stats) {
+            init_stats();
+        }
         _threadpool = std::make_unique<Threadpool>(config.nb_threads);
 
         std::thread dict_reader(std::bind(&DES::attempts_producer, this));
         bool        found(false);
 
         do {
+            if (_config->stats) {
+                std::cout << "Attempts: " << _attempts << std::endl;
+            }
             std::this_thread::sleep_for(
                 std::chrono::milliseconds(DES::timeout)
             );
@@ -48,6 +55,7 @@ namespace Bruteforce
 
                 for (auto it = _futures.begin(); it != _futures.end();) {
                     if (it->valid()) {
+                        ++_attempts;
                         if (it->get()) {
                             found = true;
                             break ;
@@ -69,6 +77,22 @@ namespace Bruteforce
     /*
     ** Protected member functions
     */
+    void
+    DES::init_stats()
+    {
+        _attempts = 0;
+        _dicts_sizes.resize(_config->dictionaries.size(), 0);
+        _attempts_size = 0;
+        for (unsigned int i = 0; i < _config->dictionaries.size(); ++i) {
+            std::ifstream in(_config->dictionaries.at(i),
+                             std::ifstream::ate | std::ifstream::binary);
+
+            _dicts_sizes[i] = (in.tellg() != -1
+                               ? static_cast<size_t>(in.tellg()) : 0);
+            _attempts_size += _dicts_sizes[i];
+        }
+    }
+
     void
     DES::attempts_producer()
     {
