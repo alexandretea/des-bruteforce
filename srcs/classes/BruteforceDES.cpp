@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdexcept>
 #include <fstream>
+#include <cstring>
 #include "BruteforceDES.hpp"
 
 namespace Bruteforce
@@ -77,6 +78,7 @@ namespace Bruteforce
                 std::ifstream   dict(dict_path.c_str());
 
                 if (dict) {
+                    std::cout << "dict: " << dict_path << std::endl;
                     extract_words(dict);
                 } else {
                     std::cerr << "Warning: can't read from dictionary: "
@@ -100,10 +102,10 @@ namespace Bruteforce
             std::vector<std::string>    bulk;
 
             dict.read(buffer, DES::buffer_size);
+            if (dict.gcount() == 0)
+                break ;
             buffer[dict.gcount()] = '\0';
 
-            if (dict.gcount() == 0)
-                continue ;
             string_view buff_view(buffer, dict.gcount());
 
             while (i < buff_view.size()) {
@@ -112,9 +114,11 @@ namespace Bruteforce
                 if (pos == string_view::npos) {
                     left = buff_view.data() + i;
                     i = buff_view.size();
+                } else if (pos == 0) {
+                    ++i;
                 } else {
                     std::string     word(buff_view.data() + i,
-                                         buff_view.data() + pos);
+                                         buff_view.data() + pos - 1);
 
                     if (not word.empty())
                         bulk.emplace_back(std::move(word));
@@ -149,7 +153,9 @@ namespace Bruteforce
                     std::cerr << "Warning: crypt() failed (salt: '"
                               << _config->salt << "', key: '" << attempt << "')"
                               << std::endl;
-                } else if (_config->encrypted_key == encrypted + 2) {
+                }
+                std::cout << _config->encrypted_key << " " <<  std::string(encrypted + 2) << std::endl;
+                if (_config->encrypted_key == std::string(encrypted + 2)) {
                     *_key = attempt;
                     return true;
                 }
