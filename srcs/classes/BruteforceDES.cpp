@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <cstring>
+#include <crypt.h>
 #include "BruteforceDES.hpp"
 
 namespace Bruteforce
@@ -39,14 +40,15 @@ namespace Bruteforce
             init_stats();
         }
         _threadpool = std::make_unique<Threadpool>(config.nb_threads);
+        std::packaged_task<unsigned int ()>
+            reader_task(std::bind(&DES::attempts_producer, this));
 
-        std::thread dict_reader(std::bind(&DES::attempts_producer, this));
+        std::future<unsigned int>   reader_future = reader_task.get_future();
+        std::thread                 dict_reader(std::move(reader_task));
+
         bool        found(false);
 
         do {
-            if (_config->stats) {
-                std::cout << "Attempts: " << _attempts << std::endl;
-            }
             std::this_thread::sleep_for(
                 std::chrono::milliseconds(DES::timeout)
             );
@@ -55,8 +57,7 @@ namespace Bruteforce
                 std::lock_guard<std::mutex> lock(_mutex);
 
                 for (auto it = _futures.begin(); it != _futures.end();) {
-                    if (it->valid()) {
-                        ++_attempts;
+                    if (it->valid() and DES::is_future_ready(*it)) {
                         if (it->get()) {
                             found = true;
                             break ;
@@ -68,9 +69,13 @@ namespace Bruteforce
                     ++it;
                 }
             }
+            if (_config->stats) {
+                std::cout << "Attempts: " << _attempts << "/"
+                          << _attempts_size << std::endl;
+            }
         } while (not found
-                 and not _futures.empty()
-                 and _threadpool->unsafe_pending_tasks() > 0);
+                 and (not _futures.empty()
+                      or not is_future_ready(reader_future)));
         dict_reader.join();
         return found;
     }
@@ -94,16 +99,19 @@ namespace Bruteforce
         }
     }
 
-    void
+    unsigned int
     DES::attempts_producer()
     {
+        unsigned int nb_words = 0;
+
         try {
+
             for (auto& dict_path: _config->dictionaries) {
                 std::ifstream   dict(dict_path.c_str());
 
                 if (dict) {
                     std::cout << "dict: " << dict_path << std::endl;
-                    extract_words(dict);
+                    nb_words = extract_words(dict);
                 } else {
                     std::cerr << "Warning: can't read from dictionary: "
                     << dict_path << std::endl;
@@ -113,12 +121,15 @@ namespace Bruteforce
             std::cerr << "An error occured while extracting from dictionaries: "
                       << e.what() << std::endl;
         }
+        return nb_words;
     }
 
-    void
+    unsigned int
     DES::extract_words(std::ifstream& dict) {
-        using   string_view = std::experimental::string_view;
-        char    buffer[DES::buffer_size + 1];
+        using string_view = std::experimental::string_view;
+
+        char            buffer[DES::buffer_size + 1];
+        unsigned int    nb_words = 0;
 
         while (not dict.eof()) {
             unsigned int                i = 0;
@@ -156,6 +167,7 @@ namespace Bruteforce
             if (not bulk.empty()) {
                 std::lock_guard<std::mutex> lock(_mutex);
 
+                nb_words += bulk.size();
                 _futures.emplace_back(
                     _threadpool->push(std::bind(&DES::bruteforce_bulk, this,
                                             std::placeholders::_1),
@@ -163,25 +175,36 @@ namespace Bruteforce
                 );
             }
         }
+        return nb_words;
     }
 
     bool
     DES::bruteforce_bulk(std::vector<std::string> const& bulk)
     {
+        static std::mutex  mutex;
+
         try {
             char const* encrypted;
 
             for (auto& attempt: bulk) {
-                if ((encrypted =
-                    ::crypt(attempt.data(), _config->salt.data())) == NULL) {
+                struct crypt_data   data;
+
+                data.initialized = 0;
+                if ((encrypted = ::crypt_r(attempt.data(), _config->salt.data(),
+                                           &data)) == NULL) {
                     std::cerr << "Warning: crypt() failed (salt: '"
                               << _config->salt << "', key: '" << attempt << "')"
                               << std::endl;
                 }
-                std::cout << _config->encrypted_key << " " <<  std::string(encrypted + 2) << std::endl;
                 if (_config->encrypted_key == std::string(encrypted + 2)) {
                     *_key = attempt;
                     return true;
+                }
+                if (_config->stats) {
+                    static std::mutex           mutex;
+                    std::lock_guard<std::mutex> lock(mutex);
+
+                    ++_attempts;
                 }
             }
         } catch (std::exception const& e) {

@@ -17,7 +17,6 @@ namespace Bruteforce
         using Threadpool = tea::concurrency::Threadpool;
         using BoolFuture = std::future<bool>;
 
-    public:
         typedef struct {
             bool                        debug;
             bool                        stats;
@@ -32,20 +31,26 @@ namespace Bruteforce
         DES(DES const& other) = delete;
         ~DES();
 
-    public:
         DES&        operator=(DES const& other) = delete;
-
-    public:
         bool        run(Config const& config, std::string& key);
+
         static bool is_valid_config(Config const& config,
                                     std::string* err) noexcept;
         static void is_valid_config(Config const& config);
 
     protected:
-        void        init_stats();
-        void        attempts_producer();
-        void        extract_words(std::ifstream& dict);
-        bool        bruteforce_bulk(std::vector<std::string> const& bulk);
+        void            init_stats();
+        unsigned int    attempts_producer();
+        unsigned int    extract_words(std::ifstream& dict);
+        bool            bruteforce_bulk(std::vector<std::string> const& bulk);
+
+        template<typename R>
+        static bool
+        is_future_ready(std::future<R> const& f)
+        {
+            return f.wait_for(std::chrono::seconds(0))
+                    == std::future_status::ready;
+        }
 
     protected:
         Config const*               _config;

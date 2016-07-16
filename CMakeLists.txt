@@ -7,7 +7,6 @@ project(${PROJECT_NAME})
 include(ExternalProject)
 include(CheckIncludeFileCXX)
 
-# find_package()
 include_directories(
     vendors/cxxopts/src
     srcs/classes
@@ -16,7 +15,6 @@ include_directories(
 # link_directories(${CMAKE_SOURCE_DIR}/)
 
 set(LIBS
-    #${Boost_LIBRARIES}
     -lpthread
     -lcrypt
 )
@@ -42,9 +40,3 @@ add_executable(${PROJECT_NAME}_debug ${SOURCES})
 set_target_properties(${PROJECT_NAME}_debug PROPERTIES COMPILE_FLAGS
 "${CMAKE_CXX_FLAGS} -O0 -g3 -D DEBUG -std=c++14 -W -Wall -Wextra")
 target_link_libraries(${PROJECT_NAME}_debug ${LIBS})
-
-# add_executable(${PROJECT_NAME}_asan ${SOURCES})
-# set_target_properties(${PROJECT_NAME}_asan PROPERTIES COMPILE_FLAGS
-#                       "${CMAKE_CXX_FLAGS} -O0 -g3 -D DEBUG -std=c++14 \
-# -fsanitize=address -fno-omit-frame-pointer -W -Wall -Wextra")
-# target_link_libraries(${PROJECT_NAME}_asan -lasan ${LIBS})
